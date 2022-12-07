@@ -63,7 +63,8 @@ def main():
     vanilla_astar.to(device)
 
     # training setup
-    opt = optim.RMSprop(neural_astar.parameters(), lr=0.001)
+    # opt = optim.RMSprop(neural_astar.parameters(), lr=0.001)
+    opt = optim.Adam(neural_astar.parameters(), lr=3e-4, weight_decay=1e-5)
     criterion = nn.L1Loss()
 
     # logger setup
