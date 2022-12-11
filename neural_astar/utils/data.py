@@ -29,10 +29,18 @@ def create_dataloader(filename: str,
     """
 
     dataset = MazeDataset(filename, split, num_starts=num_starts)
+    
+    # setup the drop_last flag
+    drop_last_bool = False
+    if split == "train":
+        # check if dataset size is divisible by batch size
+        drop_last_bool = False if len(dataset) % batch_size == 0 else True
+    
     return data.DataLoader(dataset,
                            batch_size=batch_size,
                            shuffle=shuffle,
-                           num_workers=0)
+                           num_workers=0,
+                           drop_last=drop_last_bool)
 
 
 class MazeDataset(data.Dataset):

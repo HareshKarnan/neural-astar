@@ -132,10 +132,10 @@ def visualize_results(map_designs: torch.tensor,
     results = make_grid(map_designs).permute(1, 2, 0)
     h = make_grid(histories).permute(1, 2, 0)
     p = make_grid(paths).permute(1, 2, 0).float()
-    results[h[..., 0] == 1] = torch.tensor([0.2, 0.8, 0])
-    results[p[..., 0] == 1] = torch.tensor([1.0, 0.0, 0])
+    results[h[..., 0] == 1] = torch.tensor([0.2, 0.8, 0]).to(results.device)
+    results[p[..., 0] == 1] = torch.tensor([1.0, 0.0, 0]).to(results.device)
 
-    results = ((results.numpy()) * 255.).astype("uint8")
+    results = ((results.detach().cpu().numpy()) * 255.).astype("uint8")
 
     if scale > 1:
         results = Image.fromarray(results).resize(
