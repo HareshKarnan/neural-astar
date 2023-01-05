@@ -50,15 +50,6 @@ class NeuralAstarNetwork(pl.LightningModule):
         self.vanillaastar_model.eval()
         
         self.loss = torch.nn.L1Loss()
-        
-        # use a VGG16 model as a discriminator with input size 4x32x32. Note that the input is 
-        # 4 channels because we have 4 maps: map design, start map, goal map, and optimal trajectory
-        self.discriminator = nn.Sequential(
-            nn.Linear(4*32*32, 1024), nn.ReLU(),
-            nn.Linear(1024, 512), nn.ReLU(),
-            nn.Linear(512, 256), nn.ReLU(),
-            nn.Linear(256, 1), nn.Sigmoid()
-        )
     
     def forward(self, map_designs, start_maps, goal_maps):
         return self.neuralastar_model(map_designs, start_maps, goal_maps)
