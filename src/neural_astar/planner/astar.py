@@ -91,7 +91,11 @@ class VanillaAstar(nn.Module):
         """
 
         cost_maps = map_designs
-        obstacles_maps = map_designs
+        # obstacles_maps = map_designs
+        # # convert obstacle maps to binary maps
+        # obstacles_maps = (obstacles_maps < 1e-5).float()
+        
+        obstacles_maps = torch.ones_like(map_designs)
 
         return self.perform_astar(
             cost_maps,

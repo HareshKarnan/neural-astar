@@ -231,7 +231,7 @@ class DifferentiableAstar(nn.Module):
             # update g if one of the following conditions is met
             # 1) neighbor is not in the close list (1 - histories) nor in the open list (1 - open_maps)
             # 2) neighbor is in the open list but g < g2
-            g2 = expand((g + cost_maps) * selected_node_maps, neighbor_filter)
+            g2 = expand((g + cost_maps + 1) * selected_node_maps, neighbor_filter)
             idx = (1 - open_maps) * (1 - histories) + open_maps * (g > g2)
             idx = idx * neighbor_nodes
             idx = idx.detach()
