@@ -46,6 +46,21 @@ def compute_chebyshev_distance(idx: int, goal_idx: int, W: int) -> float:
     euc = np.sqrt(((loc - goal_loc) ** 2).sum())
     return h + 0.001 * euc
 
+def compute_manhattan_distance(idx, goal_idx, W) -> float:
+    """compute manhattan heuristic"""
+    loc = np.array([idx % W, idx // W])
+    goal_loc = np.array([goal_idx % W, goal_idx // W])
+    dxdy = np.abs(loc - goal_loc)
+    h = dxdy.sum()
+    euc = np.sqrt(((loc - goal_loc) ** 2).sum())
+    return h + 0.001 * euc
+
+def compute_euclidean_distance(idx, goal_idx, W):
+    """compute euclidean heuristic"""
+    loc = np.array([idx % W, idx // W])
+    goal_loc = np.array([goal_idx % W, goal_idx // W])
+    euc = np.sqrt(((loc - goal_loc) ** 2).sum())
+    return euc
 
 def get_history(close_list: list, H: int, W: int) -> np.array:
     """Get search history"""
@@ -103,7 +118,6 @@ def pq_astar(
 
     return AstarOutput(torch.tensor(histories), torch.tensor(path_maps))
 
-
 def solve_single(
     pred_cost: np.array,
     start_map: np.array,
@@ -112,12 +126,21 @@ def solve_single(
     g_ratio: float = 0.5,
 ) -> list:
     """Solve a single problem"""
-
+    
     H, W = map_design.shape
     start_idx = np.argwhere(start_map.flatten()).item()
     goal_idx = np.argwhere(goal_map.flatten()).item()
     map_design_vct = map_design.flatten()
     pred_cost_vct = pred_cost.flatten()
+    # normalize the pred_cost for each cell to be in [0, max_chebyshev] where max_chebyshev is the maximum distance from start_idx
+    # max_chebyshev = compute_chebyshev_distance(start_idx, goal_idx, W)
+    # pred_cost_vct = pred_cost_vct * np.sqrt(max_chebyshev)
+
+    # pred_cost_vct is between 0-1
+    # for A star to work, we need to balance the cost of the heuristic and the cost of the path
+    # we do this by normalizing the pred_cost_vct based on the euclidean heuristic's cost
+    # pred_cost_vct = pred_cost_vct * compute_euclidean_distance(start_idx, goal_idx, W)
+    
     open_list = pqdict()
     close_list = pqdict()
     open_list.additem(start_idx, 0)
@@ -133,18 +156,30 @@ def solve_single(
         v_idx, v_cost = open_list.popitem()
         close_list.additem(v_idx, v_cost)
         for n_idx in get_neighbor_indices(v_idx, H, W):
-            if (
-                (map_design_vct[n_idx] == 1)
-                & (n_idx not in open_list)
-                & (n_idx not in close_list)
-            ):
-                fnew = (
-                    v_cost
-                    - (1 - g_ratio) * compute_chebyshev_distance(v_idx, goal_idx, W)
-                    + g_ratio * pred_cost_vct[n_idx]
-                    + (1 - g_ratio) * compute_chebyshev_distance(n_idx, goal_idx, W)
-                )
-                open_list.additem(n_idx, fnew)
+            # f_new = (
+            #     v_cost
+            #     - (1 - g_ratio) * compute_manhattan_distance(v_idx, goal_idx, W)
+            #     + g_ratio * pred_cost_vct[n_idx]
+            #     + (1 - g_ratio) * compute_manhattan_distance(n_idx, goal_idx, W)
+            # )
+            f_new = (
+                v_cost - compute_chebyshev_distance(v_idx, goal_idx, W)
+                + pred_cost_vct[n_idx]
+                + compute_chebyshev_distance(n_idx, goal_idx, W)
+            )
+
+            # conditions for the nodes not yet in the open list nor closed list
+            cond = (n_idx not in open_list) & (n_idx not in close_list)
+
+            # condition for the nodes already in the open list but with larger f value
+            if n_idx in open_list:
+                cond = cond | (open_list[n_idx] > f_new)
+
+            if cond:
+                try:
+                    open_list.additem(n_idx, f_new)
+                except:
+                    open_list[n_idx] = f_new
                 parent_list[n_idx] = v_idx
 
     history_map = get_history(close_list, H, W)
